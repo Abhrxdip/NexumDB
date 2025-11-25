@@ -1,0 +1,13 @@
+[package]
+name = "nexum_cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "nexum"
+path = "src/main.rs"
+
+[dependencies]
+nexum_core = { path = "../nexum_core" }
+anyhow = { workspace = true }
+tokio = { workspace = true }
