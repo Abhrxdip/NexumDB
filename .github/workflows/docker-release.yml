@@ -31,8 +31,8 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/nexumdb:latest
-            ${{ secrets.DOCKER_USERNAME }}/nexumdb:${{ steps.meta.outputs.version }}
-            ${{ secrets.DOCKER_USERNAME }}/nexumdb:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/nexumdb:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/nexumdb:${{ steps.meta.outputs.version }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/nexumdb:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/nexumdb:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/nexumdb:buildcache,mode=max

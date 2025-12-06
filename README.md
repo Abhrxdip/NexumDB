@@ -70,13 +70,13 @@ $ docker compose build
 ### Run the application
 
 ```bash
-$ docker compose up 
+$ docker compose up
 ```
  
 ### Stop the application 
 
 ```bash
-$ docker compose down 
+$ docker compose down
 ```
 
 ### Logs 
