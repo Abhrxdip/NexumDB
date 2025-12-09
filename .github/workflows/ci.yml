@@ -59,6 +59,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
+      - name: Install Python dependencies
+        run: pip install -r nexum_ai/requirements-lock.txt
+        
       - name: Byte-compile nexum_ai
         run: python -m compileall nexum_ai
