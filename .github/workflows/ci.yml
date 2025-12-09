@@ -47,6 +47,12 @@ jobs:
 
       - name: tests
         run: cargo test --workspace -- --test-threads=1
+      
+      - name: Build documentation
+        run: cargo doc --workspace --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
 
   python:
     name: Python syntax check
