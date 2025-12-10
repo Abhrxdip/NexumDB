@@ -34,10 +34,14 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
-         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
           restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
 
       - name: fmt
         run: cargo fmt --all -- --check
@@ -47,6 +51,15 @@ jobs:
 
       - name: tests
         run: cargo test --workspace -- --test-threads=1
+      
+      - name: Build documentation
+        run: cargo doc --workspace --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+
+      - name: Security audit
+        run: cargo audit
 
   python:
     name: Python syntax check
@@ -59,6 +72,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      - name: Install ruff
+        run: pip install ruff
 
+      - name: Lint Python
+        run: ruff check nexum_ai/
+          
+
+      - name: Install Python dependencies
+        run: pip install -r nexum_ai/requirements-lock.txt
+        
       - name: Byte-compile nexum_ai
         run: python -m compileall nexum_ai
