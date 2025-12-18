@@ -21,8 +21,9 @@ fn storage_write_throughput(c: &mut Criterion) {
                         for i in 0..size {
                             let key = format!("key_{:06}", i);
                             let value = format!("value_{:06}_data_payload", i);
-                            black_box(engine.set(key.as_bytes(), value.as_bytes()).unwrap());
+                            engine.set(key.as_bytes(), value.as_bytes()).unwrap();
                         }
+                        black_box(())
                     },
                     criterion::BatchSize::SmallInput,
                 );
@@ -101,7 +102,7 @@ fn storage_mixed_workload(c: &mut Criterion) {
                                 // Write operation
                                 let key = format!("key_{:06}", i + 1000);
                                 let value = format!("new_value_{:06}", i);
-                                black_box(engine.set(key.as_bytes(), value.as_bytes()).unwrap());
+                                engine.set(key.as_bytes(), value.as_bytes()).unwrap();
                             }
                         }
                     },
@@ -166,7 +167,8 @@ fn storage_persistence_benchmark(c: &mut Criterion) {
                 (engine, temp_dir)
             },
             |(engine, _temp_dir)| {
-                black_box(engine.flush().unwrap());
+                engine.flush().unwrap();
+                black_box(())
             },
             criterion::BatchSize::SmallInput,
         );
