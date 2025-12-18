@@ -1,50 +1,51 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use nexum_core::{Executor, StorageEngine, Parser};
+use nexum_core::{Executor, Parser, StorageEngine};
+use nexum_core::storage::Result;
 use std::time::Duration;
 
-fn setup_test_data(engine: &StorageEngine, num_records: usize) -> anyhow::Result<()> {
+fn setup_test_data(engine: &StorageEngine, num_records: usize) -> Result<()> {
     // Create users table data
     for i in 0..num_records {
         let key = format!("users:{}:id", i);
         engine.set(key.as_bytes(), &i.to_le_bytes())?;
-        
+
         let name_key = format!("users:{}:name", i);
         let name = format!("User{}", i);
         engine.set(name_key.as_bytes(), name.as_bytes())?;
-        
+
         let age_key = format!("users:{}:age", i);
         let age = 20 + (i % 50);
         engine.set(age_key.as_bytes(), &age.to_le_bytes())?;
-        
+
         let email_key = format!("users:{}:email", i);
         let email = format!("user{}@example.com", i);
         engine.set(email_key.as_bytes(), email.as_bytes())?;
     }
-    
+
     // Create products table data
     for i in 0..num_records / 10 {
         let key = format!("products:{}:id", i);
         engine.set(key.as_bytes(), &i.to_le_bytes())?;
-        
+
         let name_key = format!("products:{}:name", i);
         let name = format!("Product{}", i);
         engine.set(name_key.as_bytes(), name.as_bytes())?;
-        
+
         let price_key = format!("products:{}:price", i);
         let price = (10.0 + (i as f64 * 5.5)) as u64;
         engine.set(price_key.as_bytes(), &price.to_le_bytes())?;
     }
-    
+
     Ok(())
 }
 
 fn executor_simple_select_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("executor_simple_select");
     group.measurement_time(Duration::from_secs(10));
-    
+
     for num_records in [100, 1000, 10000].iter() {
         group.throughput(Throughput::Elements(*num_records as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::new("select_all", num_records),
             num_records,
@@ -58,28 +59,28 @@ fn executor_simple_select_benchmark(c: &mut Criterion) {
                     },
                     |(executor, sql)| {
                         let stmt = Parser::parse(sql).unwrap();
-                        black_box(executor.execute(&stmt).unwrap());
+                        black_box(executor.execute(stmt).unwrap());
                     },
                     criterion::BatchSize::SmallInput,
                 );
             },
         );
     }
-    
+
     group.finish();
 }
 
 fn executor_filtered_select_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("executor_filtered_select");
     group.measurement_time(Duration::from_secs(10));
-    
+
     let queries = vec![
         ("age_filter", "SELECT * FROM users WHERE age > 30"),
         ("name_filter", "SELECT * FROM users WHERE name LIKE 'User1%'"),
         ("complex_filter", "SELECT * FROM users WHERE age > 25 AND age < 45"),
         ("multiple_conditions", "SELECT * FROM users WHERE age > 20 AND name LIKE 'User%' AND id < 5000"),
     ];
-    
+
     for (query_name, sql) in queries {
         group.bench_with_input(
             BenchmarkId::new("10k_records", query_name),
@@ -94,33 +95,38 @@ fn executor_filtered_select_benchmark(c: &mut Criterion) {
                     },
                     |(executor, sql)| {
                         let stmt = Parser::parse(sql).unwrap();
-                        black_box(executor.execute(&stmt).unwrap());
+                        black_box(executor.execute(stmt).unwrap());
                     },
                     criterion::BatchSize::SmallInput,
                 );
             },
         );
     }
-    
+
     group.finish();
 }
 
 fn executor_insert_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("executor_insert");
-    
+
     for batch_size in [1, 10, 100, 1000].iter() {
         group.throughput(Throughput::Elements(*batch_size as u64));
-        
+
         // Generate INSERT statement with multiple rows
         let mut values = Vec::new();
         for i in 0..*batch_size {
-            values.push(format!("({}, 'NewUser{}', {})", i + 10000, i, 25 + (i % 30)));
+            values.push(format!(
+                "({}, 'NewUser{}', {})",
+                i + 10000,
+                i,
+                25 + (i % 30)
+            ));
         }
         let insert_sql = format!(
             "INSERT INTO users (id, name, age) VALUES {}",
             values.join(", ")
         );
-        
+
         group.bench_with_input(
             BenchmarkId::new("batch_insert", batch_size),
             &insert_sql,
@@ -134,20 +140,20 @@ fn executor_insert_benchmark(c: &mut Criterion) {
                     },
                     |(executor, sql)| {
                         let stmt = Parser::parse(sql).unwrap();
-                        black_box(executor.execute(&stmt).unwrap());
+                        black_box(executor.execute(stmt).unwrap());
                     },
                     criterion::BatchSize::SmallInput,
                 );
             },
         );
     }
-    
+
     group.finish();
 }
 
 fn executor_create_table_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("executor_create_table");
-    
+
     let table_definitions = vec![
         ("simple_table", "CREATE TABLE simple (id INTEGER, name TEXT)"),
         ("medium_table", "CREATE TABLE medium (id INTEGER, name TEXT, age INTEGER, email TEXT, status TEXT)"),
@@ -169,7 +175,7 @@ fn executor_create_table_benchmark(c: &mut Criterion) {
             preferences TEXT
         )"),
     ];
-    
+
     for (table_name, sql) in table_definitions {
         group.bench_function(table_name, |b| {
             b.iter_batched(
@@ -180,20 +186,20 @@ fn executor_create_table_benchmark(c: &mut Criterion) {
                 },
                 |(executor, sql)| {
                     let stmt = Parser::parse(sql).unwrap();
-                    black_box(executor.execute(&stmt).unwrap());
+                    black_box(executor.execute(stmt).unwrap());
                 },
                 criterion::BatchSize::SmallInput,
             );
         });
     }
-    
+
     group.finish();
 }
 
 fn executor_mixed_workload_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("executor_mixed_workload");
     group.measurement_time(Duration::from_secs(15));
-    
+
     let workload = vec![
         "CREATE TABLE test_table (id INTEGER, data TEXT, value INTEGER)",
         "INSERT INTO test_table (id, data, value) VALUES (1, 'test1', 100)",
@@ -204,9 +210,9 @@ fn executor_mixed_workload_benchmark(c: &mut Criterion) {
         "SELECT id, data FROM test_table WHERE data LIKE 'test%'",
         "SELECT * FROM test_table ORDER BY value DESC",
     ];
-    
+
     group.throughput(Throughput::Elements(workload.len() as u64));
-    
+
     group.bench_function("typical_workload", |b| {
         b.iter_batched(
             || {
@@ -217,13 +223,13 @@ fn executor_mixed_workload_benchmark(c: &mut Criterion) {
             |(executor, workload)| {
                 for sql in workload {
                     let stmt = Parser::parse(sql).unwrap();
-                    black_box(executor.execute(&stmt).unwrap());
+                    black_box(executor.execute(stmt).unwrap());
                 }
             },
             criterion::BatchSize::SmallInput,
         );
     });
-    
+
     group.finish();
 }
 
@@ -231,11 +237,11 @@ fn executor_large_dataset_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("executor_large_dataset");
     group.measurement_time(Duration::from_secs(15));
     group.sample_size(10);
-    
+
     // Reduced dataset sizes to prevent CI timeouts
     for dataset_size in [10000, 25000].iter() {
         group.throughput(Throughput::Elements(*dataset_size as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::new("full_table_scan", dataset_size),
             dataset_size,
@@ -249,14 +255,14 @@ fn executor_large_dataset_benchmark(c: &mut Criterion) {
                     },
                     |(executor, sql)| {
                         let stmt = Parser::parse(sql).unwrap();
-                        black_box(executor.execute(&stmt).unwrap());
+                        black_box(executor.execute(stmt).unwrap());
                     },
                     criterion::BatchSize::SmallInput,
                 );
             },
         );
     }
-    
+
     group.finish();
 }
 
