@@ -249,6 +249,7 @@ fn filter_between_benchmark(c: &mut Criterion) {
 
 fn filter_batch_evaluation_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("filter_batch_evaluation");
+    group.sample_size(10); // Reduce sample size for large datasets
     
     let column_names = vec![
         "id".to_string(),
@@ -259,9 +260,9 @@ fn filter_batch_evaluation_benchmark(c: &mut Criterion) {
     ];
     let evaluator = ExpressionEvaluator::new(column_names);
     
-    // Create test data
+    // Create test data (reduced from 10k to 5k)
     let mut test_rows = Vec::new();
-    for i in 0..10000 {
+    for i in 0..5000 {
         test_rows.push(create_test_row(
             i,
             &format!("User{}", i),
@@ -284,7 +285,7 @@ fn filter_batch_evaluation_benchmark(c: &mut Criterion) {
         group.throughput(Throughput::Elements(test_rows.len() as u64));
         
         group.bench_with_input(
-            BenchmarkId::new("10k_rows", filter_name),
+            BenchmarkId::new("5k_rows", filter_name),
             &where_expr,
             |b, expr| {
                 b.iter(|| {

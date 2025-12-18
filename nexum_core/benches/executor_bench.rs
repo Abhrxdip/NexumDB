@@ -229,10 +229,11 @@ fn executor_mixed_workload_benchmark(c: &mut Criterion) {
 
 fn executor_large_dataset_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("executor_large_dataset");
-    group.measurement_time(Duration::from_secs(20));
+    group.measurement_time(Duration::from_secs(15));
     group.sample_size(10);
     
-    for dataset_size in [50000, 100000].iter() {
+    // Reduced dataset sizes to prevent CI timeouts
+    for dataset_size in [10000, 25000].iter() {
         group.throughput(Throughput::Elements(*dataset_size as u64));
         
         group.bench_with_input(

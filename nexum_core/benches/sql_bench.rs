@@ -139,10 +139,11 @@ fn parse_error_handling(c: &mut Criterion) {
 
 fn parse_large_query_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("sql_parse_large");
+    group.sample_size(10); // Reduce sample size for large benchmarks
     
-    // Generate a very large INSERT statement
+    // Generate a moderately large INSERT statement (reduced from 10k to 1k)
     let mut large_values = Vec::new();
-    for i in 0..10000 {
+    for i in 0..1000 {
         large_values.push(format!("({}, 'User{}', {}, 'email{}@example.com')", 
                                  i, i, 20 + (i % 50), i));
     }
@@ -153,15 +154,15 @@ fn parse_large_query_benchmark(c: &mut Criterion) {
     
     group.throughput(Throughput::Bytes(large_insert.len() as u64));
     
-    group.bench_function("large_insert_10k_rows", |b| {
+    group.bench_function("large_insert_1k_rows", |b| {
         b.iter(|| {
             black_box(Parser::parse(&large_insert).unwrap());
         });
     });
     
-    // Generate a complex SELECT with many conditions
+    // Generate a complex SELECT with many conditions (reduced from 100 to 50)
     let mut conditions = Vec::new();
-    for i in 0..100 {
+    for i in 0..50 {
         conditions.push(format!("id = {}", i));
     }
     let large_select = format!(
