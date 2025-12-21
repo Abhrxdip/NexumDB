@@ -39,6 +39,9 @@ def test_cache_persistence_lifecycle():
         for query, result in test_data:
             cache1.put(query, result)
         
+        # Save cache after adding entries
+        cache1.save_cache()
+        
         stats1 = cache1.get_cache_stats()
         print(f"   ✅ Added {stats1['total_entries']} entries")
         
@@ -113,6 +116,7 @@ def test_environment_variable_config():
             # Create cache (should use env variable)
             cache = SemanticCache()
             cache.put("SELECT 1", "test result")
+            cache.save_cache()
             
             # Verify it used the custom path
             assert os.path.exists(custom_cache), "Should use environment variable path"

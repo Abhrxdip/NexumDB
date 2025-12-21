@@ -94,9 +94,6 @@ class SemanticCache:
             'result': result
         })
         print(f"Cached query: {query[:50]}...")
-        
-        # Auto-save cache after adding new entry
-        self.save_cache()
     
     def clear(self) -> None:
         """Clear the cache"""
@@ -345,6 +342,9 @@ def test_cache_persistence() -> Dict[str, Any]:
     
     for query, result in test_queries:
         cache1.put(query, result)
+    
+    # Save cache after adding entries
+    cache1.save_cache()
     
     stats1 = cache1.get_cache_stats()
     print(f"Cache stats after adding entries: {stats1}")

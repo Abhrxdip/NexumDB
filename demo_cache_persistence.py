@@ -39,6 +39,9 @@ def demo_cache_persistence():
         cache1.put(query, result)
         time.sleep(0.1)  # Simulate processing time
     
+    # Save cache after adding all entries
+    cache1.save_cache()
+    
     stats1 = cache1.get_cache_stats()
     print(f"\n📊 Cache populated: {stats1['total_entries']} entries")
     print(f"   Cache file: {stats1['cache_file']}")
