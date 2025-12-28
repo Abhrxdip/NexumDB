@@ -70,6 +70,8 @@ pub enum Statement {
     Update {
         table: String,
         assignments: Vec<(String, Value)>,
+    Delete {
+        table: String,
         where_clause: Option<Box<Expr>>,
     },
 }
