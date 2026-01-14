@@ -315,9 +315,17 @@ impl Executor {
                         };
 
                         if should_update {
-                            // Apply assignments to the row
+                            // Apply assignments to the row with bounds checking
                             for (col_idx, new_value) in &assignment_indices {
-                                row.values[*col_idx] = new_value.clone();
+                                if let Some(value) = row.values.get_mut(*col_idx) {
+                                    *value = new_value.clone();
+                                } else {
+                                    return Err(StorageError::ReadError(format!(
+                                        "Row data corrupted: column index {} out of bounds (row has {} values)",
+                                        col_idx,
+                                        row.values.len()
+                                    )));
+                                }
                             }
                             updates.push((key.clone(), row));
                         }
@@ -877,5 +885,128 @@ mod tests {
             }
             _ => panic!("Expected Selected result"),
         }
+    }
+
+    #[test]
+    fn test_update_type_mismatch_error() {
+        let storage = StorageEngine::memory().unwrap();
+        let executor = Executor::new(storage);
+
+        // Create table with integer column
+        let create = Statement::CreateTable {
+            name: "test_type_error".to_string(),
+            columns: vec![
+                Column {
+                    name: "id".to_string(),
+                    data_type: DataType::Integer,
+                },
+                Column {
+                    name: "count".to_string(),
+                    data_type: DataType::Integer,
+                },
+            ],
+        };
+        executor.execute(create).unwrap();
+
+        // Insert a row
+        let insert = Statement::Insert {
+            table: "test_type_error".to_string(),
+            columns: vec!["id".to_string(), "count".to_string()],
+            values: vec![vec![Value::Integer(1), Value::Integer(10)]],
+        };
+        executor.execute(insert).unwrap();
+
+        // Try to update integer column with text value - should fail
+        let update = Statement::Update {
+            table: "test_type_error".to_string(),
+            assignments: vec![("count".to_string(), Value::Text("not a number".to_string()))],
+            where_clause: None,
+        };
+
+        let result = executor.execute(update);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("Type mismatch"));
+    }
+
+    #[test]
+    fn test_update_duplicate_column_error() {
+        let storage = StorageEngine::memory().unwrap();
+        let executor = Executor::new(storage);
+
+        // Create table
+        let create = Statement::CreateTable {
+            name: "test_dup_col".to_string(),
+            columns: vec![
+                Column {
+                    name: "id".to_string(),
+                    data_type: DataType::Integer,
+                },
+                Column {
+                    name: "name".to_string(),
+                    data_type: DataType::Text,
+                },
+            ],
+        };
+        executor.execute(create).unwrap();
+
+        // Insert a row
+        let insert = Statement::Insert {
+            table: "test_dup_col".to_string(),
+            columns: vec!["id".to_string(), "name".to_string()],
+            values: vec![vec![Value::Integer(1), Value::Text("Alice".to_string())]],
+        };
+        executor.execute(insert).unwrap();
+
+        // Try to update same column twice - should fail
+        let update = Statement::Update {
+            table: "test_dup_col".to_string(),
+            assignments: vec![
+                ("name".to_string(), Value::Text("Bob".to_string())),
+                ("name".to_string(), Value::Text("Charlie".to_string())),
+            ],
+            where_clause: None,
+        };
+
+        let result = executor.execute(update);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("Duplicate column assignment"));
+    }
+
+    #[test]
+    fn test_update_unknown_column_error() {
+        let storage = StorageEngine::memory().unwrap();
+        let executor = Executor::new(storage);
+
+        // Create table
+        let create = Statement::CreateTable {
+            name: "test_unknown_col".to_string(),
+            columns: vec![Column {
+                name: "id".to_string(),
+                data_type: DataType::Integer,
+            }],
+        };
+        executor.execute(create).unwrap();
+
+        // Insert a row
+        let insert = Statement::Insert {
+            table: "test_unknown_col".to_string(),
+            columns: vec!["id".to_string()],
+            values: vec![vec![Value::Integer(1)]],
+        };
+        executor.execute(insert).unwrap();
+
+        // Try to update non-existent column - should fail
+        let update = Statement::Update {
+            table: "test_unknown_col".to_string(),
+            assignments: vec![("nonexistent".to_string(), Value::Integer(42))],
+            where_clause: None,
+        };
+
+        let result = executor.execute(update);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("not found"));
     }
 }

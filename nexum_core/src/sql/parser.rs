@@ -316,7 +316,9 @@ mod tests {
                 assert_eq!(table, "users");
                 assert_eq!(assignments.len(), 2);
                 assert_eq!(assignments[0].0, "name");
+                assert_eq!(assignments[0].1, Value::Text("Bob".to_string()));
                 assert_eq!(assignments[1].0, "age");
+                assert_eq!(assignments[1].1, Value::Integer(30));
                 assert!(where_clause.is_some());
             }
             _ => panic!("Expected Update statement"),
