@@ -2,6 +2,12 @@
 name = "nexum_core"
 version = "0.4.0"
 edition = "2021"
+license = "MIT"
+authors = ["Aviral Garg"]
+repository = "https://github.com/aviralgarg05/NexumDB"
+description = "AI-native database core engine with SQL and semantic caching"
+keywords = ["database", "ai", "sql", "semantic-cache"]
+categories = ["database-implementations"]
 
 [dependencies]
 sled = { workspace = true }

@@ -1,4 +1,9 @@
 [![CI](https://github.com/aviralgarg05/NexumDB/actions/workflows/ci.yml/badge.svg)](https://github.com/aviralgarg05/NexumDB/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/aviralgarg05/NexumDB/actions/workflows/codeql.yml/badge.svg)](https://github.com/aviralgarg05/NexumDB/actions/workflows/codeql.yml)
+[![codecov](https://codecov.io/gh/aviralgarg05/NexumDB/branch/main/graph/badge.svg)](https://codecov.io/gh/aviralgarg05/NexumDB)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
 # NexumDB - AI-Native Database
 
